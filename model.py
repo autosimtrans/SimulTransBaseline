@@ -1144,14 +1144,13 @@ class Transformer(Layer):
         '''
 
         if stream:
-            # embed()
             if waitk < 0 or waitk > src_word.shape[0]:
+                # if it's full sentence
                 enc_outputs = [self.encoder(src_word[-1], src_pos[-1], src_slf_attn_bias[-1])]
             else:
+                # if it's wait-k
                 enc_outputs = []
                 for i in range(waitk-1, src_word.shape[0]):
-                    # embed()
-                    # enc_output = self.encoder(src_word[i][:, :i+1], src_pos[i][:, :i+1], src_slf_attn_bias[i][:, :, :i+1, :i+1])
                     enc_output = self.encoder(src_word[i], src_pos[i], src_slf_attn_bias[i])
                     enc_outputs.append(enc_output)
         else:
@@ -1163,6 +1162,12 @@ class Transformer(Layer):
                     enc_output = self.encoder(src_word[:, :i], src_pos[:, :i], src_slf_attn_bias[:, :, :i, :i])
                     enc_outputs.append(enc_output)
 
+        '''
+        src_lens = []
+        for line in src_word.numpy()[-1, :, :]:
+            l = sum([1 for w in line if w != 1])
+            src_lens.append(l)
+        '''
 
         # constant number
         batch_size = enc_outputs[-1].shape[0]
@@ -1194,18 +1199,13 @@ class Transformer(Layer):
         } for i in range(self.n_layer)]
 
 
-        '''
-        src_lens = []
-        for line in src_word.numpy()[-1, :, :]:
-            l = sum([1 for w in line if w != 1])
-            src_lens.append(l)
-        '''
-
         for i in range(max_len):
             trg_pos = layers.fill_constant(shape=trg_word.shape,
                                            dtype="int64",
                                            value=i)
-            if i >= len(enc_outputs):
+            # if i >= len(enc_outputs):
+            if waitk < 0 or i+waitk-1 >= len(enc_outputs):
+                # if the decoder step is full sent or longer than all source step, then read the whole src
                 _e = enc_outputs[-1]
                 if stream:
                     logits = self.decoder(trg_word, trg_pos, None, trg_src_attn_bias[-1, :, :, :, :_e.shape[1]],
@@ -1216,6 +1216,7 @@ class Transformer(Layer):
             else:
                 _e = enc_outputs[i]
                 if stream:
+                    # in stream input, src start from wait-1
                     logits = self.decoder(trg_word, trg_pos, None, trg_src_attn_bias[i+waitk-1, :, :, :, :_e.shape[1]], [_e], caches)
                 else:
                     logits = self.decoder(trg_word, trg_pos, None, trg_src_attn_bias[:, :, :, :_e.shape[1]],

@@ -28,7 +28,8 @@ from utils.check import check_gpu, check_version
 # include task-specific libs
 import stream_reader as reader
 from model import Transformer, position_encoding_init
-import time
+from sacremoses import MosesDetruecaser, MosesDetokenizer
+from IPython import embed
 
 
 def post_process_seq(seq, bos_idx, eos_idx, output_bos=False, output_eos=False):
@@ -90,7 +91,8 @@ def do_predict(args):
                                      unk_mark=args.special_token[2],
                                      max_length=args.max_length,
                                      n_head=args.n_head,
-                                     stream=args.stream)
+                                     stream=args.stream,
+                                     src_bpe_dict=args.src_bpe_dict)
     batch_generator = processor.data_generator(phase="predict", place=place)
     args.src_vocab_size, args.trg_vocab_size, args.bos_idx, args.eos_idx, \
         args.unk_idx = processor.get_vocab_summary()
@@ -132,10 +134,17 @@ def do_predict(args):
 
         f = open(args.output_file, "wb")
 
-        t0 = time.time()
+        detok = MosesDetokenizer(lang='en')
+        detc = MosesDetruecaser()
+
         for input_data in test_loader():
-            (src_word, src_pos, src_slf_attn_bias, trg_word,
-             trg_src_attn_bias) = input_data
+            if args.stream:
+                (src_word, src_pos, src_slf_attn_bias, trg_word,
+                 trg_src_attn_bias, real_read) = input_data
+            else:
+                (src_word, src_pos, src_slf_attn_bias, trg_word,
+                 trg_src_attn_bias) = input_data
+
             finished_seq, finished_scores = transformer.beam_search(
                 src_word,
                 src_pos,
@@ -150,15 +159,88 @@ def do_predict(args):
                 stream=args.stream)
             finished_seq = finished_seq.numpy()
             finished_scores = finished_scores.numpy()
-            for ins in finished_seq:
+            for idx, ins in enumerate(finished_seq):
                 for beam_idx, beam in enumerate(ins):
                     if beam_idx >= args.n_best: break
                     id_list = post_process_seq(beam, args.bos_idx, args.eos_idx)
                     word_list = [trg_idx2word[id] for id in id_list]
-                    sequence = b" ".join(word_list) + b"\n"
-                    f.write(sequence)
+                    if args.waitk > 0:
+                        # for wait-k models, wait k words in the beginning
+                        word_list = [b''] * (args.waitk-1) + word_list
+                    else:
+                        # for full sentence model, wait until the end
+                        word_list = [b''] * (len(real_read[idx].numpy())-1) + word_list
+
+                    if args.stream:
+                        final_output = []
+                        real_output = []
+                        _read = real_read[idx].numpy()
+                        sent = ''
+                        bpe_flag = False
+
+                        for j in range(max(len(_read), len(word_list))):
+                            # append number of reads at step j
+                            r = _read[j] if j < len(_read) else 0
+                            if r > 0:
+                                final_output += [b''] * (r-1)
+
+                            # append number of writes at step j
+                            w = word_list[j] if j < len(word_list) else b''
+                            w = w.decode('utf-8')
+                            real_output.append(w)
+
+                            # if bpe_flag:
+                            #     _sent = ('%s@@ %s'%(sent, w)).strip()
+                            # else:
+                            #     _sent = ('%s %s'%(sent, w)).strip()
+
+                            _sent = ' '.join(real_output)
+
+                            if len(_sent) > 0:
+
+                                _sent += ' a'
+                                _sent = ' '.join(_sent.split())
+
+                                # if _sent.endswith('@@ a'):
+                                #     bpe_flag = True
+                                # else:
+                                #     bpe_flag = False
+
+                                _sent = _sent.replace('@@ ', '')
+                                _sent = detok.detokenize(_sent.split())
+                                _sent = detc.detruecase(_sent)
+                                _sent = ' '.join(_sent)
+                                _sent = _sent[:-1].strip()
+
+                            incre = _sent[len(sent):]
+                            #print('_sent0:', _sent)
+                            sent = _sent
+                            #print('sent:', sent)
+
+                            if r > 0:
+                                # if there is read, append a word to write
+                                # final_output.append(w)
+                                final_output.append(str.encode(incre))
+                            else:
+                                # if there is no read, append word to the final write
+                                if j >= len(word_list):
+                                    break
+                                # final_output[-1] += b' '+w
+                                final_output[-1] += str.encode(incre)
+
+
+                            #print(final_output)
+                            #print('incre:', incre)
+                            #print('_sent1:', _sent)
+                            # f.write(bytes('part:'+_sent+'\n'))
+
+                        sequence = b"\n".join(final_output) + b" \n"
+                        f.write(sequence)
+                        # embed()
+                    else:
+                        sequence = b" ".join(word_list) + b"\n"
+                        f.write(sequence)
                     f.flush()
-    print('time inner: ', time.time() - t0, 's')
 
 
 if __name__ == "__main__":
@@ -170,4 +252,4 @@ if __name__ == "__main__":
 
     t0 = time.time()
     do_predict(args)
-    print('time outer: ', time.time() - t0, 's')
+    print('Time: ', time.time() - t0, 's')

@@ -359,7 +359,8 @@ class DataProcessor(object):
                  unk_mark="<unk>",
                  only_src=False,
                  seed=0,
-                 stream=False):
+                 stream=False,
+                 src_bpe_dict=None):
         # convert str to bytes, and use byte data
         field_delimiter = field_delimiter.encode("utf8")
         token_delimiter = token_delimiter.encode("utf8")
@@ -386,6 +387,7 @@ class DataProcessor(object):
         self._field_delimiter = field_delimiter
         self._token_delimiter = token_delimiter
         self._stream = stream
+        self._src_bpe_dict = src_bpe_dict # need this file when doing streaming
         self.load_src_trg_ids(fpattern, tar_fname)
         self._random = np.random
         self._random.seed(seed)
@@ -417,14 +419,72 @@ class DataProcessor(object):
         if self._stream:
             # read json
             import json
-            with open(fpattern, 'rb') as f:
-                js_src = json.load(f)
+            import jieba
+            import apply_bpe
+            parser = apply_bpe.create_parser()
+            args = parser.parse_args(args=['-c', self._src_bpe_dict])
+            bpe = apply_bpe.BPE(args.codes, args.merges, args.separator, None, args.glossaries)
+
+            src_js = []
+            src_js.append([])
+            with open(fpattern, 'r') as f:
+                #src_js = json.load(f)
+                for line in f.readlines():
+                    txt = line.strip()
+                    if len(src_js[-1]) == 0 or txt.startswith(src_js[-1][-1][-1]) is False:
+                        src_js[-1].append([])
+                    src_js[-1][-1].append(txt)
+
+            # do tokenization and bpe in this step
+            # remove the final word because it's highly unstable (might be different bpe)
+            stream_output = []
+            for talk in src_js:
+                stream_output.append([])
+                for stream in talk:
+                    _stream = []
+                    for s in stream:
+                        s = s.strip()
+                        s = ' '.join(jieba.cut(s))
+                        s = bpe.process_line(s, args.dropout)
+                        _stream.append(s)
+
+                    stream_output[-1].append([])
+                    prev_len = 1
+                    prev_sent = ''
+                    for s in _stream[:-1]:
+                        if len(s.split()) > prev_len and prev_sent != '':
+                            stream_output[-1][-1].append(' '.join(s.split()[:-1]))
+                        else:
+                            stream_output[-1][-1].append('')
+                        prev_sent = s
+                        prev_len = len(s.split())
+                    if len(_stream) > 0:
+                        stream_output[-1][-1].append(_stream[-1])
+
+            # each line is a read
+            filter_src = []
+            real_read = [] # real incremental number of read before reading this line
+            for talk in stream_output:
+                for stream in talk:
+                    filter_src.append([])
+                    real_read.append([0])
+                    for idx, s in enumerate(stream):
+                        real_read[-1][-1] += 1
+                        if len(s) > 0:
+                            filter_src[-1].append(s)
+                            if idx < len(stream)-1:
+                                real_read[-1].append(0)
+
+            # embed()
+
+            self._real_read = []
             i = 0
-            for src_list in js_src:
+            for src_list, read_list in zip(filter_src, real_read):
                 self._sample_infos.append([])
-                for line in src_list:
+                for line, read_num in zip(src_list, read_list):
                     src_trg_ids = converters([line.encode()])
                     self._src_seq_ids.append(src_trg_ids[0])
+                    self._real_read.append(read_num)
                     lens = [len(src_trg_ids[0])]
                     if not self._only_src:
                         self._trg_seq_ids.append(src_trg_ids[1])
@@ -518,7 +578,6 @@ class DataProcessor(object):
                         batch = batch_creator.append(part_info)
                     #batch = batch_creator.append(info)
                     batches[-1].append(batch)
-                    # embed()
                     if len(batches[-1]) == batch_size:
                         batches.append([])
             else:
@@ -542,7 +601,8 @@ class DataProcessor(object):
 
                 if self._only_src:
                     if self._stream:
-                        yield [[[self._src_seq_ids[idx]] for idx in batch_ids] for batch_ids in batch_ids_list]
+                        yield [[[self._src_seq_ids[idx]] for idx in batch_ids] for batch_ids in batch_ids_list], \
+                              [[[self._real_read[idx]] for idx in batch_ids] for batch_ids in batch_ids_list]
                     else:
                         yield [[self._src_seq_ids[idx]] for idx in batch_ids]
                 else:
@@ -607,17 +667,26 @@ class DataProcessor(object):
                 yield data_inputs
 
         def __for_predict__():
+            idx = 0
             for data in data_reader():
                 if self._stream:
+                    data, real_read = data
+
+                    # pad real_read
+                    max_len = max(len(line) for line in real_read)
+                    real_read = np.array(
+                        [[n[0] for n in line] + [0] * (max_len - len(line)) \
+                                for line in real_read])
+
                     import paddle.fluid.layers as layers
 
                     a = [len(_d[0]) for d in data for _d in d]
                     if len(a) == 0:
                         continue
-                        # embed()
                     max_src_len = max([len(_d[0]) for d in data for _d in d])
                     data_inputs = prepare_infer_stream_input(data, src_pad_idx, bos_idx,
                                                   n_head, place, max_src_len)
+                    # embed()
 
                     src_word_list = []
                     src_pos_list = []
@@ -650,7 +719,7 @@ class DataProcessor(object):
                         src_attn_list.append(_src_attn)
                         cross_attn_list.append(_cross_attn)
 
-                    data_inputs = (src_word_list, src_pos_list, src_attn_list, src_word_list, cross_attn_list)
+                    data_inputs = (src_word_list, src_pos_list, src_attn_list, src_word_list, cross_attn_list, real_read)
                 else:
                     data_inputs = prepare_infer_input(data, src_pad_idx, bos_idx,
                                                   n_head, place)

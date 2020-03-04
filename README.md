@@ -30,11 +30,11 @@ The following is the code struture
 
    This project depends on PaddlePaddle 1.7 develop version. Please refer to [Installation Manual](http://www.paddlepaddle.org/#quick-start) to install.
 
+   You can simply install it with this comand:
+
+    
 2. Download code
 
     ```shell
     git clone https://github.com/PaddlePaddle/models.git
     cd models/dygraph/transformer
-    ```
-
-
