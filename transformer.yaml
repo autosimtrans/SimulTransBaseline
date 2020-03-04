@@ -110,3 +110,4 @@ postprocess_cmd: "da"  # dropout + residual connection
 weight_sharing: True
 waitk: -1
 stream: False
+src_bpe_dict: None
