@@ -22,6 +22,11 @@ The following is the code struture
 └── transformer.yaml     # configuration
 ```
 
+## Dependencies
+
+1. jieba==0.37
+2. sacremoses==0.0.38
+
 ## Quick Start
 
 ### Installation

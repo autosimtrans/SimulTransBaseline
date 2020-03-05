@@ -426,14 +426,34 @@ class DataProcessor(object):
             bpe = apply_bpe.BPE(args.codes, args.merges, args.separator, None, args.glossaries)
 
             src_js = []
-            src_js.append([])
-            with open(fpattern, 'r') as f:
-                #src_js = json.load(f)
-                for line in f.readlines():
-                    txt = line.strip()
-                    if len(src_js[-1]) == 0 or txt.startswith(src_js[-1][-1][-1]) is False:
-                        src_js[-1].append([])
-                    src_js[-1][-1].append(txt)
+            if fpattern.endswith('wav.txt'):
+                # This is for Chinese-to-English asr translation
+                src_js.append([[]])
+                with open(fpattern, 'r') as f:
+                    #src_js = json.load(f)
+                    for line in f.readlines():
+                        line = line.strip().split(', ')
+                        sent = line[1].split(': ')[1]
+                        final = line[2].split(': ')[1] == 'final'
+                        # t = line[4].split(': ')[1]
+                        #if len(src_js[-1]) == 0:
+                        #    src_js[-1].append([])
+                        #print(sent)
+                        #embed()
+                        src_js[-1][-1].append(sent)
+                        if final:
+                            src_js[-1].append([])
+                    src_js[-1] = src_js[-1][:-1]
+            else:
+                src_js.append([])
+                # This is for Chinese-to-English transcription translation
+                with open(fpattern, 'r') as f:
+                    #src_js = json.load(f)
+                    for line in f.readlines():
+                        txt = line.strip()
+                        if len(src_js[-1]) == 0 or txt.startswith(src_js[-1][-1][-1]) is False:
+                            src_js[-1].append([])
+                        src_js[-1][-1].append(txt)
 
             # do tokenization and bpe in this step
             # remove the final word because it's highly unstable (might be different bpe)
