@@ -13,11 +13,11 @@ n=114
 input_file=$1
 output_file=$2
 python3 -u predict.py \
-    --src_vocab_fpath data/wmt18_zhen_data_bpe/vocab_all.zh.bpe.16000 \
-    --src_bpe_dict data/wmt18_zhen_data_bpe/bpe.zh.16000 \
-    --trg_vocab_fpath data/wmt18_zhen_data_bpe/vocab_all.en.bpe.16000 \
+    --src_vocab_fpath /mnt/scratch/zrenj/Project/paddle-smt/transformer/get_data/wmt18_zhen_data_bpe/vocab_all.zh.bpe.16000 \
+    --src_bpe_dict /mnt/scratch/zrenj/Project/paddle-smt/transformer/get_data/wmt18_zhen_data_bpe/bpe.zh.16000 \
+    --trg_vocab_fpath /mnt/scratch/zrenj/Project/paddle-smt/transformer/get_data/wmt18_zhen_data_bpe/vocab_all.en.bpe.16000 \
     --special_token '<s>' '<e>' '<unk>' \
-    --init_from_params models/ft_wmt18_w${k}/step_${n}000 \
+    --init_from_params /mnt/scratch/zrenj/Project/paddle-smt/transformer/models/ft_wmt18_w${k}/step_${n}000 \
     --predict_file $input_file \
     --batch_size 128 \
     --beam_size 1 \
