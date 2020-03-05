@@ -9,10 +9,10 @@ fi
 touch decode/zh-en.asr.w${k}.all
 
 for fn in ${file_nums[*]}; do
-    bash run_w1.sh data/Zh-En/dev/streaming_asr/${fn}.wav.txt decode/zh-en.asr.w${k}.${fn}
+    bash run_w1.sh ../Zh-En/dev/streaming_asr/${fn}.wav.txt decode/zh-en.asr.w${k}.${fn}
     cat decode/zh-en.asr.w${k}.${fn} >> decode/zh-en.asr.w${k}.all
 done
 
-python3 latency.py decode/zh-en.asr.w${k}.all /mnt/scratch/zrenj/Project/challenge/transformer/data/zh-en.dev.asr.zh.json
-bash /mnt/scratch/zrenj/Project/challenge/transformer/data/Zh-En/dev/reference_eval/eval_scripts/demo_mteval.sh decode/zh-en.asr.w${k}.all.merge
+python3 latency.py decode/zh-en.asr.w${k}.all ../Zh-En/zh-en.dev.asr.zh.json
+bash ../Zh-En/dev/reference_eval/eval_scripts/demo_mteval.sh decode/zh-en.asr.w${k}.all.merge
 
