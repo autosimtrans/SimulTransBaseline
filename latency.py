@@ -6,7 +6,7 @@ pred_file_name, src_file_name = sys.argv[1], sys.argv[2]
 
 # with open('decode/ft.zh-en.dec.114k.w1.b1.en.stream.detok.detc.unbpe', 'r') as f:
 # with open('decode/wmt18.zh-en.dec.100k.w-1.b1.en.stream.unbpe.detok.detc', 'r') as f:
-with open(pred_file_name, 'r') as f:
+with open(pred_file_name, 'r', encoding='UTF-8') as f:
     tgt_lines = []
     for line in f.readlines():
         # exclude '\n'
@@ -15,7 +15,7 @@ with open(pred_file_name, 'r') as f:
 
 # with open('/mnt/scratch/zrenj/Project/challenge/transformer/data/zh-en.dev.zh.cut.json', 'r') as f:
 # with open('/mnt/scratch/zrenj/Project/challenge/transformer/data/zh-en.dev.zh.json', 'r') as f:
-with open(src_file_name, 'r') as f:
+with open(src_file_name, 'r', encoding='UTF-8') as f:
     import json
     src_lines = json.load(f)
 
@@ -55,7 +55,7 @@ with open(pred_file_name+'.merge', 'w') as f:
             _ap, _cw, _al = al.delay(rws[-1])
             als.append(_al)
             # embed()
-        f.write(sent+'\n')
+        f.write(sent+'\n', encoding='UTF-8')
 
 assert(idx == len(tgt_lines))
 print('AL:', sum(als) / len(als))

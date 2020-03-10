@@ -136,7 +136,7 @@ def create_parser(subparsers=None):
         metavar='PATH',
         help="Input file (default: standard input).")
     parser.add_argument(
-        '--codes', '-c', type=argparse.FileType('r'), metavar='PATH',
+        '--codes', '-c', type=argparse.FileType('r', encoding='UTF-8'), metavar='PATH',
         required=True,
         help="File with BPE codes (created by learn_bpe.py).")
     parser.add_argument(
@@ -303,7 +303,7 @@ def isolate_glossary(word, glossary):
     """
     Isolate a glossary present inside a word.
 
-    Returns a list of subwords. In which all 'glossary' glossaries are isolated 
+    Returns a list of subwords. In which all 'glossary' glossaries are isolated
 
     For example, if 'USA' is the glossary and '1934USABUSA' the word, the return value is:
         ['1934', 'USA', 'B', 'USA']

@@ -447,7 +447,7 @@ class DataProcessor(object):
             else:
                 src_js.append([])
                 # This is for Chinese-to-English transcription translation
-                with open(fpattern, 'r') as f:
+                with open(fpattern, 'r', encoding='utf-8') as f:
                     #src_js = json.load(f)
                     for line in f.readlines():
                         txt = line.strip()
