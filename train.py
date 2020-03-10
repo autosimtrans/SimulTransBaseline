@@ -124,8 +124,9 @@ def do_train(args):
         step_idx = 0
         ## init from some checkpoint, to resume the previous training
         if args.init_from_checkpoint:
-            step_idx = int(re.findall('step_[0-9]+',
-                args.init_from_checkpoint)[0][5:]) + 1
+            re_result = re.findall('step_[0-9]+', args.init_from_checkpoint)
+            if len(re_result) > 0:
+                step_idx = int(re_result[0][5:]) + 1
             model_dict, opt_dict = fluid.load_dygraph(
                 os.path.join(args.init_from_checkpoint, "transformer"))
             transformer.load_dict(model_dict)

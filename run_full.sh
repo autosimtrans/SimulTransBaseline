@@ -1,13 +1,4 @@
 #!/bin/bash
-#export CUDA_VISIBLE_DEVICES=0
-export CUDA_PATH=/tools/cuda_10.0.130
-export CUDNN_PATH=/tools/cudnn/cuda-10.0/cudnn-v7.6.4
-export NCCL_PATH=/tools/nccl/nccl_2.4.8-1+cuda10.0_x86_64
-export PATH=${PATH}:${CUDA_PATH}/bin:${CUDNN_PATH}
-export CPATH=${CUDA_PATH}/include:${CUDNN_PATH}/include:$CPATH
-export LIBRARY_PATH=${CUDA_PATH}/lib64:${CUDNN_PATH}/lib64:$LIBRARY_PATH
-export LD_LIBRARY_PATH=${NCCL_PATH}/lib:${CUDA_PATH}/lib64:${CUDA_PATH}/extras/CUPTI/lib64:${CUDNN_PATH}/lib64:$LD_LIBRARY_PATH
-
 k=-1
 input_file=$1
 output_file=$2
