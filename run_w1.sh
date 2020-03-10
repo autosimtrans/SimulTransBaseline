@@ -17,7 +17,7 @@ PYTHONPATH=/home/aistudio/external-libraries /opt/conda/envs/python35-paddle120-
     --src_bpe_dict data/wmt18_zhen_data_bpe/bpe.zh.16000 \
     --trg_vocab_fpath data/wmt18_zhen_data_bpe/vocab_all.en.bpe.16000 \
     --special_token '<s>' '<e>' '<unk>' \
-    --init_from_params models/zh-en_w1_sim \
+    --init_from_params models/zh-en-w1 \
     --predict_file $input_file \
     --batch_size 128 \
     --beam_size 1 \
