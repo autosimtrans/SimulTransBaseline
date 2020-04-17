@@ -23,7 +23,7 @@ with open(src_file_name, 'r', encoding='UTF-8') as f:
 rws = []
 als = []
 idx = 0
-with open(pred_file_name+'.merge', 'w') as f:
+with open(pred_file_name+'.merge', 'w', encoding='UTF-8') as f:
     for talk in src_lines:
         sent = ''
         for sentence in talk:
@@ -55,7 +55,7 @@ with open(pred_file_name+'.merge', 'w') as f:
             _ap, _cw, _al = al.delay(rws[-1])
             als.append(_al)
             # embed()
-        f.write(sent+'\n', encoding='UTF-8')
+        f.write(sent+'\n')
 
 assert(idx == len(tgt_lines))
 print('AL:', sum(als) / len(als))

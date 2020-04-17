@@ -8,7 +8,7 @@ fi
 touch decode/zh-en.w${k}.all
 
 for fn in ${file_nums[*]}; do
-     bash run_w-1.sh ../Zh-En/dev/streaming_transcription/${fn}.txt decode/zh-en.w${k}.${fn}
+     bash run_full.sh ../Zh-En/dev/streaming_transcription/${fn}.txt decode/zh-en.w${k}.${fn}
      cat decode/zh-en.w${k}.${fn} >> decode/zh-en.w${k}.all
 done
 
