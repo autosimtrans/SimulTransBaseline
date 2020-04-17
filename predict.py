@@ -85,7 +85,7 @@ def do_predict(args):
                                      sort_type=reader.SortType.NONE,
                                      shuffle=False,
                                      shuffle_batch=False,
-                                     only_src=True,
+                                     only_src=args.only_src,
                                      start_mark=args.special_token[0],
                                      end_mark=args.special_token[1],
                                      unk_mark=args.special_token[2],
@@ -164,14 +164,15 @@ def do_predict(args):
                     if beam_idx >= args.n_best: break
                     id_list = post_process_seq(beam, args.bos_idx, args.eos_idx)
                     word_list = [trg_idx2word[id] for id in id_list]
-                    if args.waitk > 0:
-                        # for wait-k models, wait k words in the beginning
-                        word_list = [b''] * (args.waitk-1) + word_list
-                    else:
-                        # for full sentence model, wait until the end
-                        word_list = [b''] * (len(real_read[idx].numpy())-1) + word_list
 
                     if args.stream:
+                        if args.waitk > 0:
+                            # for wait-k models, wait k words in the beginning
+                            word_list = [b''] * (args.waitk-1) + word_list
+                        else:
+                            # for full sentence model, wait until the end
+                            word_list = [b''] * (len(real_read[idx].numpy())-1) + word_list
+
                         final_output = []
                         real_output = []
                         _read = real_read[idx].numpy()

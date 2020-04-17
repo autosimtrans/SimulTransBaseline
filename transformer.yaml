@@ -111,3 +111,4 @@ weight_sharing: True
 waitk: -1
 stream: False
 src_bpe_dict: None
+only_src: False
