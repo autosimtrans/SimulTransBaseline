@@ -15,4 +15,5 @@ PYTHONPATH=/home/aistudio/external-libraries /opt/conda/envs/python35-paddle120-
     --weight_sharing False \
     --waitk $k \
     --stream True \
+    --only_src True \
     --output_file $output_file
