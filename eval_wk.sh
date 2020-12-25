@@ -1,5 +1,5 @@
 #!/bin/bash
-k=1
+k=$1
 file_nums=(3913 105 6634 2 111 4093 3075 2956 108 3 42 48 27 67 107 3063)
 
 if [ -e decode/zh-en.w${k}.all ]; then
@@ -8,7 +8,7 @@ fi
 touch decode/zh-en.w${k}.all
 
 for fn in ${file_nums[*]}; do
-     bash run_w1.sh ../Zh-En/dev/streaming_transcription/${fn}.txt decode/zh-en.w${k}.${fn}
+     bash run_w${k}.sh ../Zh-En/dev/streaming_transcription/${fn}.txt decode/zh-en.w${k}.${fn}
      cat decode/zh-en.w${k}.${fn} >> decode/zh-en.w${k}.all
 done
 
